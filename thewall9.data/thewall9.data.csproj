@@ -89,8 +89,23 @@
   <ItemGroup>
     <Compile Include="AccountBindingModels.cs" />
     <Compile Include="AccountViewModels.cs" />
+    <Compile Include="Migrations\201503242013269_add-product-to-ecommerce.cs" />
+    <Compile Include="Migrations\201503242013269_add-product-to-ecommerce.Designer.cs">
+      <DependentUpon>201503242013269_add-product-to-ecommerce.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Product.cs" />
     <Compile Include="Category.cs" />
     <Compile Include="Culture.cs" />
+    <Compile Include="Migrations\201503241647500_add-tag.cs" />
+    <Compile Include="Migrations\201503241647500_add-tag.Designer.cs">
+      <DependentUpon>201503241647500_add-tag.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201503241706439_add-global-social-accounts.cs" />
+    <Compile Include="Migrations\201503241706439_add-global-social-accounts.Designer.cs">
+      <DependentUpon>201503241706439_add-global-social-accounts.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Tag.cs" />
+    <Compile Include="Currency.cs" />
     <Compile Include="IdentityModels.cs" />
     <Compile Include="Migrations\201410031827156_InitialCreate.cs" />
     <Compile Include="Migrations\201410031827156_InitialCreate.Designer.cs">
@@ -164,6 +179,10 @@
     <Compile Include="Migrations\201503202004521_add-category-to-e-commerce.Designer.cs">
       <DependentUpon>201503202004521_add-category-to-e-commerce.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201503232057106_add-currency.cs" />
+    <Compile Include="Migrations\201503232057106_add-currency.Designer.cs">
+      <DependentUpon>201503232057106_add-currency.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Page.cs" />
     <Compile Include="ContentProperty.cs" />
@@ -228,6 +247,18 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201503202004521_add-category-to-e-commerce.resx">
       <DependentUpon>201503202004521_add-category-to-e-commerce.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201503232057106_add-currency.resx">
+      <DependentUpon>201503232057106_add-currency.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201503241647500_add-tag.resx">
+      <DependentUpon>201503241647500_add-tag.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201503241706439_add-global-social-accounts.resx">
+      <DependentUpon>201503241706439_add-global-social-accounts.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201503242013269_add-product-to-ecommerce.resx">
+      <DependentUpon>201503242013269_add-product-to-ecommerce.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

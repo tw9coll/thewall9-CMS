@@ -83,8 +83,11 @@ namespace thewall9.customer
                 "~/app/services/cultureService.js",
                 "~/app/services/toastrService.js",
                 "~/app/services/utilService.js",
-                "~/app/directives/fileread.js",
-                "~/app/controllers/appController.js",
+
+                "~/app/directives/fileread.js"
+                , "~/app/directives/tab.js"
+
+                ,"~/app/controllers/appController.js",
                 "~/app/controllers/homeController.js",
                 "~/app/controllers/configurationController.js",
                 "~/app/controllers/pagesController.js",
@@ -93,11 +96,21 @@ namespace thewall9.customer
                 "~/app/controllers/editContentController.js",
                 "~/app/controllers/passwordController.js"
                 , "~/app/controllers/categoryController.js"
+
+                , "~/app/services/currencyService.js"
+                , "~/app/controllers/currencyController.js"
+
+                , "~/app/services/tagService.js"
+                , "~/app/controllers/tagController.js"
+
+
+                
+
                 ));
 
             // Set EnableOptimizations to false for debugging. For more information,
             // visit http://go.microsoft.com/fwlink/?LinkId=301862
-            //BundleTable.EnableOptimizations = true;
+           // BundleTable.EnableOptimizations = true;
         }
     }
 }
