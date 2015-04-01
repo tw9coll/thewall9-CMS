@@ -44,6 +44,17 @@ namespace thewall9.web.parent
                 HttpContext.Current.Items["CurrentLang"] = value;
             }
         }
+        public static string _CurrentFriendlyUrl
+        {
+            get
+            {
+                return HttpContext.Current.Items["CurrentFriendlyUrl"] as string;
+            }
+            set
+            {
+                HttpContext.Current.Items["CurrentFriendlyUrl"] = value;
+            }
+        }
         public static List<CultureRoutes> _Langs
         {
             get
@@ -55,6 +66,23 @@ namespace thewall9.web.parent
                 HttpContext.Current.Session["Langs"] = value;
             }
         }
-
+        public static int _CurrentCurrencyID
+        {
+            get
+            {
+                try
+                {
+                    return Convert.ToInt32(HttpContext.Current.Request.Cookies["_CurrentCurrencyID"]);
+                }
+                catch (Exception)
+                {
+                    return 0;
+                }
+            }
+            set
+            {
+                HttpContext.Current.Request.Cookies.Add(new HttpCookie(value.ToString()));
+            }
+        }
     }
 }

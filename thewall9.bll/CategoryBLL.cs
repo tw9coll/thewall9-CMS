@@ -3,18 +3,65 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using thewall9.bll.Exceptions;
 using thewall9.data;
 using thewall9.data.binding;
 using thewall9.data.Models;
-
+using thewall9.bll.Utils;
 namespace thewall9.bll
 {
     public class CategoryBLL : BaseBLL
     {
-        private Category GetByID(int CategoryID, ApplicationDbContext _c)
+
+        #region Web
+        public Culture GetCulture(int SiteID, string Lang,string FriendlyUrl, ApplicationDbContext _c)
         {
-            return _c.Categories.Where(m => m.CategoryID == CategoryID).SingleOrDefault();
+            if (!string.IsNullOrEmpty(Lang))
+                return new CultureBLL().GetByName(SiteID, Lang);
+            else if (!string.IsNullOrEmpty(FriendlyUrl))
+                return _c.CategoryCultures.Where(m => m.Category.SiteID == SiteID && m.FriendlyUrl.ToLower().Equals(FriendlyUrl.ToLower())).Select(m=>m.Culture).FirstOrDefault();
+            else throw new RuleException("Friendly URL & Lang NULL");
         }
+        private IQueryable<CategoryCulture> Get(int SiteID, int CultureID, int CategoryID, ApplicationDbContext _c)
+        {
+            return from m in _c.CategoryCultures
+                   where m.Category.CategoryParentID == CategoryID
+                    && m.Category.SiteID == SiteID
+                    && m.Culture.CultureID == CultureID
+                   orderby m.Category.Priority
+                   select m;
+        }
+        private List<CategoryWeb> GetTree(List<CategoryCulture> Model, int SiteID, int CultureID, int ParentID, ApplicationDbContext _c)
+        {
+            return (from c in Model
+                    where c.Category.CategoryParentID == ParentID
+                    orderby c.Category.Priority
+                    select new CategoryWeb
+                    {
+                        CategoryName = c.CategoryName,
+                        FriendlyUrl = c.FriendlyUrl,
+                        CategoryID = c.CategoryID,
+
+                        CategoryItems = Get(SiteID, CultureID, c.CategoryID, _c).Any()
+                        ? GetTree(Get(SiteID, CultureID, c.CategoryID, _c).ToList(), SiteID, CultureID, c.CategoryID, _c)
+                        : new List<CategoryWeb>()
+                    }).ToList();
+        }
+        public List<CategoryWeb> Get(int SiteID, string Url, int CategoryID, string Lang, string FriendlyUrl)
+        {
+            using (var _c = db)
+            {
+                if (SiteID == 0)
+                    SiteID = new SiteBLL().Get(Url, _c).SiteID;
+                int CultureID=GetCulture(SiteID,Lang,FriendlyUrl,_c).CultureID;
+                var _Category = Get(SiteID, CultureID, CategoryID, _c).ToList();
+                return GetTree(_Category, SiteID, CultureID, CategoryID, _c);
+            }
+        }
+
+        #endregion
+
+        #region Customer
         public List<CategoryBinding> Get(int SiteID, string UserID)
         {
             using (var _c = db)
@@ -41,13 +88,44 @@ namespace thewall9.bll
                         {
                             CategoryName = m.CategoryName,
                             CultureID = m.CultureID,
-                            CultureName = m.Culture.Name
+                            CultureName = m.Culture.Name,
+                            FriendlyUrl = m.FriendlyUrl
                         }).ToList(),
 
                         CategoryItems = Model.Where(m => m.CategoryParentID == c.CategoryID).Any()
                         ? GetTree(Model, c.CategoryID, _c)
                         : new List<CategoryBinding>()
                     }).ToList();
+        }
+        private Category GetByID(int CategoryID, ApplicationDbContext _c)
+        {
+            return _c.Categories.Where(m => m.CategoryID == CategoryID).SingleOrDefault();
+        }
+        private string GetFriendlyUrl(CategoryBinding Model, string CategoryName, string FriendlyUrl, int CultureID, ApplicationDbContext _c)
+        {
+            if (!string.IsNullOrEmpty(FriendlyUrl))
+            {
+                var _G = Model.CategoryCultures.GroupBy(m => m.FriendlyUrl);
+                if (_G.Count() < Model.CategoryCultures.Count())
+                    throw new RuleException("FriendlyURL Should be Different", "0x002");
+            }
+
+            FriendlyUrl = string.IsNullOrEmpty(FriendlyUrl) ? CategoryName.CleanUrl() : FriendlyUrl;
+            if (Model.CategoryID != 0)
+            {
+                if (_c.CategoryCultures.Where(m => m.Category.SiteID == Model.SiteID
+                                    && m.FriendlyUrl == FriendlyUrl
+                                    && m.CategoryID != Model.CategoryID
+                                    && m.CultureID != CultureID).Any())
+                    throw new RuleException("FriendlyURL Exist", "0x001");
+            }
+            else
+            {
+                if (_c.CategoryCultures.Where(m => m.Category.SiteID == Model.SiteID
+                                && m.FriendlyUrl == FriendlyUrl).Any())
+                    throw new RuleException("FriendlyURL Exist", "0x001");
+            };
+            return FriendlyUrl;
         }
         public int Save(CategoryBinding Model, string UserID)
         {
@@ -61,7 +139,7 @@ namespace thewall9.bll
                     //CREATING
                     _Category.SiteID = Model.SiteID;
                     _Category.Priority = _NewBros.Select(m => m.Priority).Any() ? _NewBros.Select(m => m.Priority).Max() + 1 : 0;
-                    _Category.CategoryCultures=new List<CategoryCulture>();
+                    _Category.CategoryCultures = new List<CategoryCulture>();
                     //ADDING CULTURES
                     if (Model.CategoryCultures != null)
                     {
@@ -70,7 +148,8 @@ namespace thewall9.bll
                             _Category.CategoryCultures.Add(new CategoryCulture
                             {
                                 CategoryName = item.CategoryName,
-                                CultureID = item.CultureID
+                                CultureID = item.CultureID,
+                                FriendlyUrl = GetFriendlyUrl(Model, item.CategoryName, item.FriendlyUrl, item.CultureID, _c)
                             });
                         }
                     }
@@ -79,7 +158,7 @@ namespace thewall9.bll
                 else
                 {
                     //UPDATING
-                    _Category = GetByID(Model.CategoryID,_c);
+                    _Category = GetByID(Model.CategoryID, _c);
                     //ADDING CULTURES
                     if (Model.CategoryCultures != null)
                     {
@@ -90,13 +169,15 @@ namespace thewall9.bll
                                 _Category.CategoryCultures.Add(new CategoryCulture
                                 {
                                     CategoryName = item.CategoryName,
-                                    CultureID = item.CultureID
+                                    CultureID = item.CultureID,
+                                    FriendlyUrl = GetFriendlyUrl(Model, item.CategoryName, item.FriendlyUrl, item.CultureID, _c)
                                 });
                             }
                             else
                             {
                                 var _CC = _Category.CategoryCultures.Where(m => m.CultureID == item.CultureID).SingleOrDefault();
                                 _CC.CategoryName = item.CategoryName;
+                                _CC.FriendlyUrl = GetFriendlyUrl(Model, item.CategoryName, item.FriendlyUrl, item.CultureID, _c);
                             }
                         }
                     }
@@ -111,7 +192,7 @@ namespace thewall9.bll
                         }
                     }
 
-                } 
+                }
                 _Category.CategoryAlias = Model.CategoryAlias;
                 _Category.CategoryParentID = Model.CategoryParentID;
                 _c.SaveChanges();
@@ -124,7 +205,7 @@ namespace thewall9.bll
             {
                 var _Category = GetByID(Model.CategoryID, _c);
                 Can(_Category.SiteID, UserID, _c);
-                var _P = _c.Categories.Where(m => m.CategoryParentID == _Category.CategoryParentID && m.SiteID==_Category.SiteID);
+                var _P = _c.Categories.Where(m => m.CategoryParentID == _Category.CategoryParentID && m.SiteID == _Category.SiteID);
                 if (Model.Up)
                 {
                     if (_P.Select(m => m.Priority).Min() < _Category.Priority)
@@ -165,5 +246,6 @@ namespace thewall9.bll
                 _c.SaveChanges();
             }
         }
+        #endregion
     }
 }

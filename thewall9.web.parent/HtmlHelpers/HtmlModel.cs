@@ -84,7 +84,7 @@ namespace thewall9.web.parent.HtmlHelpers
         }
         public static MvcHtmlString LinkHome(this HtmlHelper helper)
         {
-            return new MvcHtmlString("/" +APP._Langs.Where(m=>m.Name==APP._CurrentLang).FirstOrDefault().FriendlyUrl);
+            return new MvcHtmlString(APP._Langs.Where(m=>m.Name==APP._CurrentLang).FirstOrDefault().FriendlyUrl);
         }
 
         /*
@@ -92,7 +92,7 @@ namespace thewall9.web.parent.HtmlHelpers
          */
         public static MvcHtmlString LinkTwitter(this HtmlHelper helper)
         {
-            return new MvcHtmlString("http://twitter.com/"+APP._Langs.Where(m => m.Name == APP._CurrentLang).FirstOrDefault().Twitter);
+            return new MvcHtmlString("http://twitter.com/" + APP._Langs.Where(m => m.Name == APP._CurrentLang).FirstOrDefault().Twitter);
         }
         public static MvcHtmlString LinkFacebook(this HtmlHelper helper)
         {

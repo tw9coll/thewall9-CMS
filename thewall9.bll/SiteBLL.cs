@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using thewall9.bll.Exceptions;
 using thewall9.data;
 using thewall9.data.binding;
+using thewall9.data.Models;
 
 namespace thewall9.bll
 {
@@ -33,18 +34,22 @@ namespace thewall9.bll
         }
 
         #region WEB
-        public SiteFullBinding Get(int SiteID, string Url, string Lang)
+        public Site Get(string Url, ApplicationDbContext _c)
+        {
+            return (from m in _c.Sites
+                    join u in _c.SiteUrls on m.SiteID equals u.SiteID
+                    where u.Url.Equals(Url)
+                    select m).FirstOrDefault();
+        }
+        public SiteFullBinding Get(int SiteID, string Url, string Lang, int CurrencyID)
         {
             using (var _c = db)
             {
-                var _Q = SiteID != 0
-                    ? from m in _c.Sites
-                      where m.SiteID == SiteID
-                      select m
-                     : from m in _c.Sites
-                       join u in _c.SiteUrls on m.SiteID equals u.SiteID
-                       where u.Url.Equals(Url)
-                       select m;
+                if (SiteID == 0)
+                    SiteID = Get(Url, _c).SiteID;
+                var _Q = from m in _c.Sites
+                         where m.SiteID == SiteID
+                         select m;
                 var _Site = _Q.Select(m => new SiteFullBinding
                          {
                              Site = new SiteBinding
@@ -52,7 +57,8 @@ namespace thewall9.bll
                                  DefaultLang = m.DefaultLang,
                                  GAID = m.GAID,
                                  SiteID = m.SiteID,
-                                 SiteName = m.SiteName
+                                 SiteName = m.SiteName,
+                                 ECommerce = m.ECommerce
                              }
                          }).SingleOrDefault();
                 if (_Site != null)
@@ -61,6 +67,14 @@ namespace thewall9.bll
                         Lang = _Site.Site.DefaultLang;
                     _Site.Menu = new PageBLL().GetMenu(SiteID, Url, Lang);
                     _Site.ContentLayout = new ContentBLL().GetContent(SiteID, Url, "layout", Lang);
+                    if (_Site.Site.ECommerce)
+                    {
+                        _Site.Currencies = new CurrencyBLL().Get(SiteID, Url);
+                        //TO-DO DELETE
+                        //_Site.Categories = new CategoryBLL().Get(SiteID, Url, Lang);
+                        //_Site.Products = new ProductBLL().Get(SiteID, Url, Lang, CurrencyID == 0 ? _Site.Currencies[0].CurrencyID : CurrencyID,0, 10, 1);
+                        //_Site.NumberPages = new ProductBLL().GetNumberPages(SiteID, Url, Lang, CurrencyID == 0 ? _Site.Currencies[0].CurrencyID : CurrencyID,0,2, 1);
+                    }
                     return _Site;
                 }
                 throw new RuleException("Site not found", SiteExceptionMessages.SITE_NOT_FOUNT);
@@ -79,7 +93,7 @@ namespace thewall9.bll
                     GAID = m.Site.GAID,
                     SiteID = m.Site.SiteID,
                     SiteName = m.Site.SiteName,
-                    ECommerce=m.Site.ECommerce
+                    ECommerce = m.Site.ECommerce
                 }).ToList();
             }
         }
@@ -135,9 +149,9 @@ namespace thewall9.bll
                         DefaultLang = Model.DefaultLang,
                         GAID = Model.GAID
                     };
-                    if(Model.Cultures==null || Model.Cultures.Count()==0)
+                    if (Model.Cultures == null || Model.Cultures.Count() == 0)
                         throw new RuleException("Cultures is Empty");
-                 
+
                     //ADD CULTURES
                     foreach (var item in Model.Cultures)
                     {

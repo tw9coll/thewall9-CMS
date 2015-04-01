@@ -11,16 +11,8 @@ namespace thewall9.data.binding
         public int ProductID { get; set; }
         public int SiteID { get; set; }
         public string ProductAlias { get; set; }
+        public int Priority { get; set; }
     }
-    public class ProductCultureBase
-    {
-        public string ProductName { get; set; }
-        public string Description { get; set; }
-        public string AdditionalInformation { get; set; }
-        public string IconPath { get; set; }
-        public string FriendlyUrl { get; set; }
-    }
-
     public class ProductBinding : ProductBase
     {
         public List<ProductCultureBinding> ProductCultures { get; set; }
@@ -29,12 +21,36 @@ namespace thewall9.data.binding
         public List<ProductGalleryBinding> ProductGalleries { get; set; }
         public List<ProductCurrencyBinding> ProductCurrencies { get; set; }
     }
+
+    public class ProductCultureBase
+    {
+        public string ProductName { get; set; }
+        public string Description { get; set; }
+        public string AdditionalInformation { get; set; }
+        public string IconPath { get; set; }
+        public string FriendlyUrl { get; set; }
+    }
     public class ProductCultureBinding : ProductCultureBase
     {
         public int CultureID { get; set; }
         public string CultureName { get; set; }
         public bool Adding { get; set; }
+        public FileRead IconFile { get; set; }
     }
+    public class ProductWeb : ProductCultureBase
+    {
+        public int ProductID { get; set; }
+        public double Price { get; set; }
+    }
+    public class ProductsWeb
+    {
+        public List<ProductWeb> Products { get; set; }
+        public List<CategoryWeb> Categories { get; set; }
+        public int NumberPages { get; set; }
+        public int CultureID { get; set; }
+        public string CultureName { get; set; }
+    }
+
     public class ProductTagBinding
     {
         public int ProductID { get; set; }
@@ -66,11 +82,16 @@ namespace thewall9.data.binding
     {
         public double Price { get; set; }
     }
-    public class ProductCurrencyBinding:ProductCurrencyBase
+    public class ProductCurrencyBinding : ProductCurrencyBase
     {
         public int ProductID { get; set; }
         public int CurrencyID { get; set; }
         public string CurrencyName { get; set; }
         public bool Adding { get; set; }
+    }
+    public class ProductUpdatePriorities
+    {
+        public int ProductID { get; set; }
+        public int Index { get; set; }
     }
 }
