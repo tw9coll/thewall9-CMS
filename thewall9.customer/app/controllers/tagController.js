@@ -25,7 +25,7 @@
             if (confirm("¿Estas seguro que deseas eliminar este Tag?")) {
                 tagService.remove(item.TagID).then(function (data) {
                     $scope.get();
-                    toastrService.success("Tag Eliminadp");
+                    toastrService.success("Tag Eliminado");
                 });
             }
         };

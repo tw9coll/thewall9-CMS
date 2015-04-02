@@ -151,7 +151,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\BundleConfig.cs" />
-    <Compile Include="Controllers\ProductController.cs" />
     <Compile Include="Controllers\PageController.cs" />
     <Compile Include="GlimpseSecurityPolicy.cs" />
     <Compile Include="Global.asax.cs">
@@ -161,10 +160,15 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="app\app.js" />
+    <Content Include="app\controllers\checkoutController.js" />
+    <Content Include="app\controllers\cartController.js" />
     <Content Include="app\controllers\productController.js" />
+    <Content Include="app\controllers\productsController.js" />
     <Content Include="app\controllers\appController.js" />
+    <Content Include="app\services\myHttpService.js" />
     <Content Include="app\services\productService.js" />
     <Content Include="app\services\toastrService.js" />
+    <Content Include="app\services\utilService.js" />
     <Content Include="App_Readme\Elmah.txt" />
     <Content Include="Content\angular-block-ui.css" />
     <Content Include="Content\angular-block-ui.min.css" />
@@ -232,8 +236,12 @@
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Page\Index.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
-    <Content Include="Views\Product\_Products.cshtml" />
-    <Content Include="Views\Product\Index.cshtml" />
+    <Content Include="Views\Page\Cart.cshtml" />
+    <Content Include="Views\Page\Checkout.cshtml" />
+    <Content Include="Views\Page\Products.cshtml" />
+    <Content Include="Views\Page\_Products.cshtml" />
+    <Content Include="Views\Page\Product.cshtml" />
+    <Content Include="Views\Page\OrderSent.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="app\directives\" />

@@ -44,6 +44,10 @@ namespace thewall9.web.parent.HtmlHelpers
             return new MvcHtmlString(Model.ContentCultures.ToList()[0].ContentPropertyValue);
 
         }
+        public static ContentBindingList Find(this HtmlHelper helper, ContentBindingList Model, string Value)
+        {
+            return Model.Items.Where(m => m.ContentPropertyAlias.Equals(Value)).SingleOrDefault();
+        }
         public static ContentBindingList Find(this HtmlHelper helper, PageWeb Model, string Value)
         {
             return Model.Content.Items.Where(m => m.ContentPropertyAlias.Equals(Value)).SingleOrDefault();
@@ -72,7 +76,6 @@ namespace thewall9.web.parent.HtmlHelpers
         {
             return new MvcHtmlString(GetFriendlyUrlByAlias(helper, Alias).Replace("#", ""));
         }
-        #region LANG
         public static List<CultureRoutes> GetLangs(this HtmlHelper helper)
         {
             return APP._Langs;
@@ -85,6 +88,26 @@ namespace thewall9.web.parent.HtmlHelpers
         public static MvcHtmlString LinkHome(this HtmlHelper helper)
         {
             return new MvcHtmlString(APP._Langs.Where(m=>m.Name==APP._CurrentLang).FirstOrDefault().FriendlyUrl);
+        }
+        public static MvcHtmlString LinkCart(this HtmlHelper helper)
+        {
+            return new MvcHtmlString(APP._Site.EcommercePages.Where(m=>m.PageAlias=="cart").FirstOrDefault().FriendlyUrl);
+        }
+        public static MvcHtmlString LinkCheckout(this HtmlHelper helper)
+        {
+            return new MvcHtmlString(APP._Site.EcommercePages.Where(m => m.PageAlias == "checkout").FirstOrDefault().FriendlyUrl);
+        }
+        public static MvcHtmlString LinkCatalog(this HtmlHelper helper)
+        {
+            return new MvcHtmlString(APP._Site.EcommercePages.Where(m => m.PageAlias == "catalog").FirstOrDefault().FriendlyUrl);
+        }
+        public static MvcHtmlString LinkOrderSent(this HtmlHelper helper)
+        {
+            return new MvcHtmlString(APP._Site.EcommercePages.Where(m => m.PageAlias == "order-sent").FirstOrDefault().FriendlyUrl);
+        }
+        public static int GetCurrentCurrencyID(this HtmlHelper helper)
+        {
+            return APP._CurrentCurrencyID;
         }
 
         /*
@@ -110,6 +133,5 @@ namespace thewall9.web.parent.HtmlHelpers
         {
             return new MvcHtmlString("http://instagram.com/" + APP._Langs.Where(m => m.Name == APP._CurrentLang).FirstOrDefault().Instagram);
         }
-        #endregion
     }
 }

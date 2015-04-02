@@ -56,13 +56,13 @@ namespace thewall9.web.parent.ActionFilter
                         APP._Langs = SiteService.GetLang(APP._SiteID, filterContext.HttpContext.Request.Url.Authority);
                         APP._CurrentLang = APP._Langs[0].Name;
                         APP._CurrentFriendlyUrl = APP._Langs[0].FriendlyUrl;
-                        var _CultureName = GetCulture(filterContext.HttpContext.Request);
-                        var _SavedLang= APP._Langs.Where(m => _CultureName.Contains(m.Name)).FirstOrDefault();
-                        if (_SavedLang != null)
-                        {
-                            APP._CurrentLang = _SavedLang.Name;
-                            APP._CurrentFriendlyUrl = _SavedLang.FriendlyUrl;
-                        }
+                    }
+                    var _CultureName = GetCulture(filterContext.HttpContext.Request);
+                    var _SavedLang = APP._Langs.Where(m => _CultureName.Contains(m.Name)).FirstOrDefault();
+                    if (_SavedLang != null)
+                    {
+                        APP._CurrentLang = _SavedLang.Name;
+                        APP._CurrentFriendlyUrl = _SavedLang.FriendlyUrl;
                     }
                 }
             }
@@ -72,7 +72,14 @@ namespace thewall9.web.parent.ActionFilter
             if (!filterContext.RouteData.Values.ContainsKey("NoFilterBase"))
             {
                 if (!filterContext.IsChildAction && !filterContext.HttpContext.Request.IsAjaxRequest())
+                {
                     APP._Site = SiteService.Get(APP._SiteID, filterContext.HttpContext.Request.Url.Authority, APP._CurrentLang, APP._CurrentCurrencyID);
+                    if (APP._Site.Site.ECommerce)
+                    {
+                        if (APP._CurrentCurrencyID == 0)
+                            APP._CurrentCurrencyID = APP._Site.Currencies[0].CurrencyID;
+                    }
+                }
             }
         }
     }
