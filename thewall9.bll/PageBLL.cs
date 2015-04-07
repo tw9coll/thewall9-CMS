@@ -12,7 +12,50 @@ namespace thewall9.bll
 {
     public class PageBLL : BaseBLL
     {
+
         #region WEB
+        string[] _EcommercePageAlias = new string[5] { "cart", "checkout", "catalog", "order-sent","product" };
+        public PageWeb GetPageByAlias(int SiteID, string Url, string Alias, string Lang)
+        {
+            var _Page = new PageWeb();
+            _Page.Page = GetPageCultureBindingByAlias(SiteID, Url, Alias,Lang);
+            _Page.Content = new ContentBLL().GetContent(SiteID, Url, Alias, Lang);
+            return _Page;
+        }
+        private PageCultureBinding GetPageCultureBindingByAlias(int SiteID, string Url, string Alias, string Lang)
+        {
+            using (var _c = db)
+            {
+                var _Q = SiteID != 0
+                    ? from p in _c.PageCultures
+                      where p.Page.SiteID == SiteID
+                      select p
+                     : from m in _c.PageCultures
+                       join u in _c.SiteUrls on m.Page.Site.SiteID equals u.SiteID
+                       where u.Url.Equals(Url)
+                       select m;
+
+                var _Pages = (from p in _Q
+                              where p.Page.Alias.ToLower().Equals(Alias) && p.Culture.Name.ToLower().Equals(Lang)
+                              select new PageCultureBinding
+                              {
+                                  CultureID = p.CultureID,
+                                  FriendlyUrl = p.FriendlyUrl,
+                                  MetaDescription = p.MetaDescription,
+                                  PageID = p.PageID,
+                                  Published = p.Published,
+                                  TitlePage = p.TitlePage,
+                                  ViewRender = p.ViewRender,
+                                  RedirectUrl = p.RedirectUrl,
+                                  Name = p.Name,
+                                  CultureName = p.Culture.Name,
+                                  PageAlias = p.Page.Alias
+                              }).FirstOrDefault();
+                if (_Pages == null)
+                    throw new RuleException("No existe página con ese Alias en ese Lang no existe", "0x000");
+                return _Pages;
+            }
+        }
         public PageWeb GetPage(int SiteID, string Url, string FriendlyUrl)
         {
             var _Page = new PageWeb();
@@ -20,6 +63,7 @@ namespace thewall9.bll
             _Page.Content = new ContentBLL().GetContent(SiteID, Url, _Page.Page.PageAlias, _Page.Page.CultureName);
             return _Page;
         }
+
         private PageCultureBinding GetPageCultureBinding(int SiteID, string Url, string FriendlyUrl)
         {
             using (var _c = db)
@@ -82,7 +126,6 @@ namespace thewall9.bll
         }
         public List<PageCultureBinding> GetEcommercePages(int SiteID, string Url, string Lang)
         {
-            var _PageAlias = new string[4] { "cart", "checkout", "catalog", "order-sent" };
             using (var _c = db)
             {
                 var _Q = SiteID != 0
@@ -94,7 +137,7 @@ namespace thewall9.bll
                        where u.Url.Equals(Url)
                        select m;
                 return (from p in _Q
-                        where p.Culture.Name.Equals(Lang) && _PageAlias.Contains(p.Page.Alias)
+                        where p.Culture.Name.Equals(Lang) && _EcommercePageAlias.Contains(p.Page.Alias)
                         orderby p.Page.Priority
                         select new PageCultureBinding
                         {
@@ -106,21 +149,50 @@ namespace thewall9.bll
                         }).ToList();
             }
         }
-
-        public List<PageCultureBinding> GetSitemap(int SiteID, string Url)
+        public List<PageCultureBinding> GetOtherPages(int SiteID, string Url, string Lang)
         {
             using (var _c = db)
             {
                 var _Q = SiteID != 0
                     ? from p in _c.PageCultures
-                      where p.Page.SiteID == SiteID
+                      where p.Page.SiteID == SiteID && !p.Page.InMenu
                       select p
                      : from m in _c.PageCultures
                        join u in _c.SiteUrls on m.Page.Site.SiteID equals u.SiteID
-                       where u.Url.Equals(Url)
+                       where u.Url.Equals(Url) && !m.Page.InMenu
                        select m;
-
                 return (from p in _Q
+                        where p.Culture.Name.Equals(Lang) && !_EcommercePageAlias.Contains(p.Page.Alias)
+                        orderby p.Page.Priority
+                        select new PageCultureBinding
+                        {
+                            CultureID = p.CultureID,
+                            FriendlyUrl = p.FriendlyUrl,
+                            RedirectUrl = p.RedirectUrl,
+                            Name = p.Name,
+                            PageAlias = p.Page.Alias
+                        }).ToList();
+            }
+        }
+        public SiteMapModel GetSitemap(int SiteID, string Url)
+        {
+            using (var _c = db)
+            {
+                bool _ECommerce = false;
+                if (SiteID == 0)
+                {
+                    var _Site=new SiteBLL().Get(Url, _c);
+                    SiteID = _Site.SiteID;
+                    _ECommerce = _Site.ECommerce;
+                }
+                else
+                {
+                    var _Site = new SiteBLL().Get(SiteID);
+                    _ECommerce = _Site.ECommerce;
+                }
+                var _S = new SiteMapModel();
+                _S.Pages = (from p in _c.PageCultures
+                            where p.Page.SiteID == SiteID
                         where p.Published && p.Page.Published && string.IsNullOrEmpty(p.RedirectUrl)
                         select new PageCultureBinding
                         {
@@ -130,6 +202,13 @@ namespace thewall9.bll
                             Name = p.Name,
                             PageAlias = p.Page.Alias
                         }).ToList();
+                _S.Ecommerce = _ECommerce;
+                if (_ECommerce)
+                {
+                    _S.Products = new ProductBLL().GetSitemap(SiteID);
+                    _S.Categories = new CategoryBLL().GetSitemap(SiteID);
+                }
+                return _S;
             }
         }
         public string GetPageFriendlyUrl(int SiteID, string Url, string FriendlyUrl, string TargetLang)

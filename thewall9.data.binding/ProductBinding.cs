@@ -42,6 +42,7 @@ namespace thewall9.data.binding
         public int ProductID { get; set; }
         public double Price { get; set; }
         public string CultureName { get; set; }
+        public List<ProductGalleryBinding> Galleries { get; set; }
     }
     public class ProductsWeb
     {
@@ -50,6 +51,7 @@ namespace thewall9.data.binding
         public int NumberPages { get; set; }
         public int CultureID { get; set; }
         public string CultureName { get; set; }
+        public CategoryWeb Category { get; set; }
     }
 
     public class ProductTagBinding

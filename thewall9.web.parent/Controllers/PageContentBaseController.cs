@@ -45,19 +45,32 @@ namespace thewall9.web.parent.Controllers
         [OutputCache(Duration = 12 * 3600, VaryByParam = "*")]
         public ActionResult SiteMap()
         {
+            var _Pages = PageService.GetSitemap(APP._SiteID, Request.Url.Authority);
             XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
-            var items = PageService.GetSitemap(APP._SiteID, Request.Url.Authority);
-            var sitemap = new XDocument(
-            new XDeclaration("1.0", "utf-8", "yes"),
-            new XElement(ns + "urlset",
-                from i in items
-                select
-                new XElement(ns + "url",
-                    new XElement(ns + "loc", Request.Url.Scheme + "://" + Request.Url.Authority + "/" + i.FriendlyUrl),
-                    new XElement(ns + "lastmod", String.Format("{0:yyyy-MM-dd}", DateTime.Now)),
-                    new XElement(ns + "changefreq", "always"),
-                    new XElement(ns + "priority", "0.5")
-            )));
+            var _Q = from i in _Pages.Pages
+                     select
+                     new XElement(ns + "url",
+                         new XElement(ns + "loc", Request.Url.Scheme + "://" + Request.Url.Authority + "/" + i.FriendlyUrl),
+                         new XElement(ns + "lastmod", String.Format("{0:yyyy-MM-dd}", DateTime.Now)),
+                         new XElement(ns + "changefreq", "always"),
+                         new XElement(ns + "priority", "0.5"));
+            if (_Pages.Ecommerce)
+            {
+               _Q= _Q.Union((from i in _Pages.Products
+                          select
+                          new XElement(ns + "url",
+                              new XElement(ns + "loc", Request.Url.Scheme + "://" + Request.Url.Authority + "/d/" + i.FriendlyUrl),
+                              new XElement(ns + "lastmod", String.Format("{0:yyyy-MM-dd}", DateTime.Now)),
+                              new XElement(ns + "changefreq", "always"),
+                              new XElement(ns + "priority", "0.5")))).Union((from i in _Pages.Categories
+                                                                             select
+                                                                             new XElement(ns + "url",
+                                                                                 new XElement(ns + "loc", Request.Url.Scheme + "://" + Request.Url.Authority + "/p/" + i.CatalogFriendlyUrl + "/" + i.FriendlyUrl + "/" + i.CategoryID),
+                                                                                 new XElement(ns + "lastmod", String.Format("{0:yyyy-MM-dd}", DateTime.Now)),
+                                                                                 new XElement(ns + "changefreq", "always"),
+                                                                                 new XElement(ns + "priority", "0.5"))));
+            }
+            var sitemap = new XDocument(new XDeclaration("1.0", "utf-8", "yes"),new XElement(ns + "urlset",_Q));
             return Content("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + sitemap.ToString(), "text/xml");
         }
         [Route("change-lang")]
@@ -90,16 +103,17 @@ namespace thewall9.web.parent.Controllers
         }
         public ActionResult Product(string FriendlyUrl)
         {
-            var _Model = ProductService.Get(APP._SiteID, Request.Url.Authority,FriendlyUrl, APP._CurrentCurrencyID);
-            if (_Model == null)
+            var _Product = ProductService.Get(APP._SiteID, Request.Url.Authority, FriendlyUrl, APP._CurrentCurrencyID);
+            if (_Product == null)
                 throw new HttpException(404, "Page Not Found");
             else
             {
-                ViewBag.Title = _Model.ProductName;
-                ViewBag.MetaDescription = _Model.ProductName+" "+_Model.Price;
-                //ViewBag.Active = "page-" + FriendlyUrl;
-                APP._CurrentLang = _Model.CultureName;
-                return View(_Model);
+                ViewBag.Title = _Product.ProductName;
+                ViewBag.MetaDescription = _Product.ProductName + " " + _Product.Price;
+                ViewBag.Product = _Product;
+                var _Model = PageService.GetByAlias(APP._SiteID, Request.Url.Authority, "product", _Product.CultureName);
+                APP._CurrentLang = _Product.CultureName;
+                return View(_Model.Page.ViewRender, _Model);
             }
         }
         public PartialViewResult GetProducts(int CategoryID = 0, int Page = 1)

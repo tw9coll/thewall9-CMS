@@ -1,14 +1,17 @@
 ﻿@model thewall9.data.binding.ProductsWeb
+@{
+    var _PageModel = TempData["PageModel"] as thewall9.data.binding.PageWeb;
+}
 <script>
     var _Products=@Html.Raw(Json.Encode(Model));
 </script>
 <div class="row" ng-controller="productsController">
     <div class="col-md-3">
         <div class="subtitle">
-            Categories
+            @Html.FindValue(_PageModel, "categories")
         </div>
         <script type="text/ng-template" id="_categories.html">
-            <a ng-href="/@Html.LinkCatalog()/{{item.FriendlyUrl}}/{{item.CategoryID}}" href="">
+            <a ng-href="/p/@Html.LinkCatalog()/{{item.FriendlyUrl}}/{{item.CategoryID}}" href="">
                 {{item.CategoryName}}
             </a>
             <ul ng-if="item.CategoryItems">
@@ -19,33 +22,41 @@
         <ul class="list-unstyled">
             <li class="list-group-item" ng-repeat="item in data.Categories" ng-include="'_categories.html'">
             </li>
+            <li class="list-group-item" ng-show="data.Category">
+                <a href="@Html.LinkCatalog()">
+                    <i class="fa fa-arrow-circle-left"></i> All Products
+                </a>
+            </li>
         </ul>
     </div>
     <div class="col-md-9">
         <div class="subtitle">
-            Products
+            @Html.FindValue(_PageModel, "products") <span ng-show="data.Category">
+                - {{data.Category.CategoryName}}
+                <a href="@Html.LinkCatalog()" class="btn btn-primary btn-sm pull-right">
+                    <i class="fa fa-arrow-circle-left"></i> Back
+                </a>
+            </span>
         </div>
-        <div class="col-md-4" ng-repeat-start="item in data.Products">
-            <div class="thumbnail">
-                <a href="" ng-href="/p/{{item.FriendlyUrl}}">
+        <div class="col-md-4 " ng-repeat-start="item in data.Products">
+            <div class="thumbnail thumbnail-products">
+                <a href="" ng-href="/d/{{item.FriendlyUrl}}">
                     <img ng-src="{{item.IconPath}}" />
                 </a>
                 <div class="text-center">
-                    <a href="" ng-href="/p/{{item.FriendlyUrl}}">
+                    <a href="" ng-href="/d/{{item.FriendlyUrl}}">
                         {{item.ProductName}}
                     </a>
-                    <div class="small">
-                        {{item.Description}}
+                    <div class="small description">
+                        {{item.Description  | limitTo:140}}
                     </div>
-                    <div>
-                        <div class="btn-group dropup">
-                            <button type="button" class="btn btn-default" ng-click="addProduct(item)">
-                                {{moneySymbol}} {{item.Price}}
-                            </button>
-                            <button type="button" class="btn btn-primary" ng-click="addProduct(item)">
-                                <i class="fa fa-shopping-cart"></i> Buy
-                            </button>
-                        </div>
+                    <div class="btn-group btns">
+                        <button type="button" class="btn btn-default" ng-click="addProduct(item)">
+                            {{moneySymbol}} {{item.Price}}
+                        </button>
+                        <button type="button" class="btn btn-primary" ng-click="addProduct(item)">
+                            <i class="fa fa-shopping-cart"></i> Buy
+                        </button>
                     </div>
                 </div>
             </div>

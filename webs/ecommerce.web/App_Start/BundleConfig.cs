@@ -43,6 +43,8 @@ namespace thewall9.web
                       , "~/app/services/myHttpService.js"
                       , "~/app/services/toastrService.js"
                       , "~/app/services/productService.js"
+                      , "~/app/services/searchService.js"
+                      , "~/app/services/messagesService.js"
 
                       //CONTROLLERS
                       , "~/app/controllers/appController.js"

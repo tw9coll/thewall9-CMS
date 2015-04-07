@@ -9,20 +9,12 @@ using thewall9.data;
 using thewall9.data.binding;
 using thewall9.data.Models;
 using thewall9.bll.Utils;
+using System.IO;
 namespace thewall9.bll
 {
     public class ProductBLL : BaseBLL
     {
         #region Web
-        //private ProductCulture GetCulture(int SiteID, string Lang, string FriendlyUrl, ApplicationDbContext _c)
-        //{
-        //    return _c.ProductCultures.Where(m => m.Product.SiteID == SiteID
-        //        && (!string.IsNullOrEmpty(FriendlyUrl)
-        //            ? m.FriendlyUrl.ToLower().Equals(FriendlyUrl.ToLower())
-        //            : (!string.IsNullOrEmpty(Lang)
-        //                ? m.Culture.Name.ToLower().Equals(Lang.ToLower())
-        //                : false))).FirstOrDefault();
-        //}
         private IQueryable<ProductCulture> Get(int SiteID, int CultureID, int CategoryID, ApplicationDbContext _c)
         {
             return (CategoryID == 0
@@ -36,9 +28,9 @@ namespace thewall9.bll
                  orderby m.Product.Priority
                  select m);
         }
-        private IQueryable<ProductWeb> Get(int SiteID, int CultureID, int CurrencyID, int CategoryID, ApplicationDbContext _c)
+        private IQueryable<ProductWeb> Select(IQueryable<ProductCulture> _PC, int CurrencyID, ApplicationDbContext _c)
         {
-            return Get(SiteID, CultureID, CategoryID, _c).Select(m => new ProductWeb
+            return _PC.Select(m => new ProductWeb
             {
                 AdditionalInformation = m.AdditionalInformation,
                 Description = m.Description,
@@ -46,6 +38,12 @@ namespace thewall9.bll
                 IconPath = m.IconPath,
                 ProductName = m.ProductName,
                 ProductID = m.ProductID,
+                CultureName = m.Culture.Name,
+
+                Galleries = m.Product.ProductGalleries.Select(m2 => new ProductGalleryBinding
+                {
+                    PhotoPath = m2.PhotoPath
+                }).ToList(),
 
                 //TO-DO OPTIMIZE ME
                 Price = (CurrencyID == 0 || !m.Product.ProductCurrencies.Where(p => p.CurrencyID == CurrencyID).Any())
@@ -55,6 +53,11 @@ namespace thewall9.bll
                 : m.Product.ProductCurrencies.Where(p => p.CurrencyID == CurrencyID).FirstOrDefault().Price
             });
         }
+        private IQueryable<ProductWeb> Get(int SiteID, int CultureID, int CurrencyID, int CategoryID, ApplicationDbContext _c)
+        {
+            return Select(Get(SiteID, CultureID, CategoryID, _c), CategoryID, _c);
+        }
+
         public ProductsWeb Get(int SiteID, string Url, string Lang, string FriendlyUrl, int CurrencyID, int CategoryID, int Take, int Page)
         {
             using (var _c = db)
@@ -69,6 +72,10 @@ namespace thewall9.bll
                 _PW.Categories = new CategoryBLL().Get(SiteID, null, CategoryID, Lang, FriendlyUrl);
                 _PW.CultureID = _Culture.CultureID;
                 _PW.CultureName = _Culture.Name;
+                if (CategoryID != 0)
+                {
+                    _PW.Category = new CategoryBLL().Get(CategoryID, _Culture.CultureID);
+                }
                 return _PW;
             }
         }
@@ -78,28 +85,38 @@ namespace thewall9.bll
             {
                 if (SiteID == 0)
                     SiteID = new SiteBLL().Get(Url, _c).SiteID;
-                return (from m in _c.ProductCultures
-                        where m.Product.SiteID == SiteID && m.FriendlyUrl.ToLower().Equals(FriendlyUrl.ToLower())
-                        select new ProductWeb
-                         {
-                             AdditionalInformation = m.AdditionalInformation,
-                             Description = m.Description,
-                             FriendlyUrl = m.FriendlyUrl,
-                             IconPath = m.IconPath,
-                             ProductName = m.ProductName,
-                             ProductID = m.ProductID,
-                             CultureName = m.Culture.Name,
-
-                             //TO-DO OPTIMIZE ME
-                             Price = (CurrencyID == 0 || !m.Product.ProductCurrencies.Where(p => p.CurrencyID == CurrencyID).Any())
-                             ? (m.Product.ProductCurrencies.Any()
-                                 ? m.Product.ProductCurrencies.FirstOrDefault().Price
-                                 : 0)
-                             : m.Product.ProductCurrencies.Where(p => p.CurrencyID == CurrencyID).FirstOrDefault().Price
-                         }).FirstOrDefault();
+                return Select((from m in _c.ProductCultures
+                               where m.Product.SiteID == SiteID && m.FriendlyUrl.ToLower().Equals(FriendlyUrl.ToLower())
+                               select m), CurrencyID, _c).FirstOrDefault();
             }
         }
-
+        public List<ProductWeb> GetByQuery(int SiteID, string Lang, int CurrencyID, string Query, int Take, int Page)
+        {
+            using (var _c = db)
+            {
+                
+                var _Q = from m in _c.ProductCultures
+                         where m.Product.SiteID == SiteID
+                         && m.ProductName.ToLower().Contains(Query)
+                         && m.Culture.Name.ToLower().Equals(Lang.ToLower())
+                         orderby m.ProductName
+                         select m;
+                return Select(_Q, CurrencyID, _c).Skip(Take * (Page - 1)).Take(Take).ToList();
+            }
+        }
+        public List<ProductWeb> GetSitemap(int SiteID)
+        {
+            using (var _c = db)
+            {
+                var _Q = from m in _c.ProductCultures
+                         where m.Product.SiteID == SiteID
+                         select new ProductWeb
+                         {
+                             FriendlyUrl=m.FriendlyUrl
+                         };
+                return _Q.ToList();
+            }
+        }
         #endregion
 
         #region Customer
@@ -357,6 +374,10 @@ namespace thewall9.bll
                 Can(_Category.SiteID, UserID, _c);
                 _c.Products.Remove(_Category);
                 _c.SaveChanges();
+
+                var _Container = "product-gallery";
+                var _ContainerReference = ProductID + "/";
+                new Utils.FileUtil().DeleteFolder(_Container, _ContainerReference);
             }
         }
         public void UpdatePriorities(ProductUpdatePriorities Model, string UserID)
@@ -413,6 +434,48 @@ namespace thewall9.bll
                             TagID = cc.TagID,
                             TagName = cc.TagName
                         }).Distinct().ToList();
+            }
+        }
+        //Gallery
+        public ProductGalleryBinding AddGallery(int ProductID, string TempPath, string FileName, string UserID)
+        {
+            using (var _c = db)
+            {
+                var _Gallery = new ProductGallery(ProductID, null);
+                _c.ProductGalleries.Add(_Gallery);
+                _c.SaveChanges();
+
+                Can(GetByID(ProductID, _c).SiteID, UserID, _c);
+                FileStream stream = new FileStream(TempPath, FileMode.Open);
+                var _Container = "product-gallery";
+                var _ContainerReference = ProductID + "/" + _Gallery.ProductGalleryID + "/" + FileName;
+                new Utils.FileUtil().UploadImage(stream, _Container, _ContainerReference);
+                var _Path = StorageUrl + "/" + _Container + "/" + _ContainerReference;
+
+                var _Model = _c.ProductGalleries.Where(m => m.ProductGalleryID == _Gallery.ProductGalleryID).FirstOrDefault();
+                _Model.PhotoPath = _Path;
+                _c.SaveChanges();
+                return new ProductGalleryBinding
+                {
+                    PhotoPath = _Path,
+                    ProductGalleryID = _Gallery.ProductGalleryID,
+                    ProductID = ProductID
+                };
+
+            }
+        }
+        public void DeleteGallery(int GalleryID, string UserID)
+        {
+            using (var _c = db)
+            {
+                var _Model = _c.ProductGalleries.Where(m => m.ProductGalleryID == GalleryID).FirstOrDefault();
+                Can(_Model.Product.SiteID, UserID, _c);
+                _c.ProductGalleries.Remove(_Model);
+                _c.SaveChanges();
+
+                var _Container = "product-gallery";
+                var _ContainerReference = _Model.ProductID + "/" + GalleryID;
+                new Utils.FileUtil().DeleteFolder(_Container, _ContainerReference);
             }
         }
         #endregion

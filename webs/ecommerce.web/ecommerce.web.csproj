@@ -166,8 +166,10 @@
     <Content Include="app\controllers\productsController.js" />
     <Content Include="app\controllers\appController.js" />
     <Content Include="app\services\myHttpService.js" />
+    <Content Include="app\services\searchService.js" />
     <Content Include="app\services\productService.js" />
     <Content Include="app\services\toastrService.js" />
+    <Content Include="app\services\messagesService.js" />
     <Content Include="app\services\utilService.js" />
     <Content Include="App_Readme\Elmah.txt" />
     <Content Include="Content\angular-block-ui.css" />
@@ -242,6 +244,7 @@
     <Content Include="Views\Page\_Products.cshtml" />
     <Content Include="Views\Page\Product.cshtml" />
     <Content Include="Views\Page\OrderSent.cshtml" />
+    <Content Include="Views\Page\Contact.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="app\directives\" />
